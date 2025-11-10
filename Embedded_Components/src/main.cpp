@@ -1,14 +1,14 @@
 #include <Arduino.h>
+#include "rfid.hpp"
 
-// put function declarations here:
-constexpr int COMPUTER_BAUD_RATE = 9600; 
+constexpr uint32_t USB_BAUD = 115200;  // your USB console speed
 
 void setup() {
-  Serial.begin(COMPUTER_BAUD_RATE);
-  Serial.println("ESP Initialized.");
+  Serial.begin(USB_BAUD);
+  RFID134Mod::begin(/*rxPin=*/16);  // change if you wired differently
+  Serial.println("WL-134 ready.");
 }
 
 void loop() {
-  Serial.print("hello world\n");
-  delay(1000);
+  RFID134Mod::poll();
 }
