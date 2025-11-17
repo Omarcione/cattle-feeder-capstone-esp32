@@ -1,20 +1,18 @@
 #pragma once
 #include <Arduino.h>
+#include <stdint.h>
 #include <Rfid134.h>
 
-// Simple namespace wrapper so main.cpp stays clean
-namespace RFID134Mod {
+#define HardwareSerial_Rx 16
+#define HardwareSerial_Tx -1 // Use -1 if TX pin is not needed
 
-// Start the reader on a given UART + pins.
-// Default: ESP32 Serial2, RX pin 16, baud 9600, 8N2 (many WL-134s prefer 8N2).
-void begin(int rxPin = 16, int txPin = -1, uint32_t baud = 9600,
-           HardwareSerial& uart = Serial2);
+// Global ID variable if needed elsewhere
+extern uint64_t ID_Number;
 
-// Must be called often from loop(); parses bytes and prints tags.
-void poll();
+// Forward declarations of RFID handler + notify class
+class RfidNotify;
+extern Rfid134<HardwareSerial, RfidNotify> rfid;
 
-// Optional: set a callback if you don't want default Serial prints.
-using OnTagCb = void(*)(const Rfid134Reading&);
-void setOnTagCallback(OnTagCb cb);
-
-} // namespace RFID134Mod
+// Function prototypes
+void initRFID();
+void updateRFID();

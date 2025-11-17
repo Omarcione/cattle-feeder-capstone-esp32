@@ -1,59 +1,49 @@
 #include "rfid.hpp"
 
-namespace RFID134Mod {
+// Global variable
+uint64_t ID_Number = 0;
 
-// Forward-declare static variables so Notify can see them
-static OnTagCb userCb_ = nullptr;
-static HardwareSerial* uart_ = &Serial2;
-static Rfid134<HardwareSerial, class Notify>* reader_ = nullptr;
-
-// ---- Notification handler ----
-class Notify {
+// Notification handler class
+class RfidNotify
+{
 public:
-  static void OnError(Rfid134_Error err) {
-    Serial.print("RFID error: "); Serial.println(err);
-  }
-  static void OnPacketRead(const Rfid134Reading& reading) {
-    // If user provided a callback, use it
-    if (userCb_) {
-      userCb_(reading);
-      return;
+    static void OnError(Rfid134_Error errorCode)
+    {
+        Serial.println();
+        Serial.print("Com Error ");
+        Serial.println(errorCode);
     }
 
-    // Default print (country + 64-bit ID with zero padding)
-    Serial.print("TAG: ");
-    Serial.print(reading.country);
-    Serial.print(" ");
+    static void OnPacketRead(const Rfid134Reading& reading)
+    {
+        char buffer[64];
 
-    char buf[13];
-    sprintf(buf, "%06lu", (uint32_t)(reading.id / 1000000UL));
-    Serial.print(buf);
-    sprintf(buf, "%06lu", (uint32_t)(reading.id % 1000000UL));
-    Serial.print(buf);
+        Serial.println("TAG INFO:");
 
-    if (reading.isAnimal) Serial.print(" animal");
-    if (reading.isData)   Serial.print(" data");
-    Serial.println();
-  }
+        sprintf(buffer, "\tCountry: %03u", reading.country);
+        Serial.println(buffer);
+
+        if (reading.isData)   Serial.println("\tTag type: data");
+        if (reading.isAnimal) Serial.println("\tTag type: animal");
+
+        ID_Number = reading.id;
+        sprintf(buffer, "\tID: %llu", ID_Number);
+        Serial.println(buffer);
+    }
 };
 
-// ---- Module functions ----
-void begin(int rxPin, int txPin, uint32_t baud, HardwareSerial& uart) {
-  uart_ = &uart;
-  uart_->begin(baud, SERIAL_8N2, rxPin, txPin);
+// Create the RFID object
+Rfid134<HardwareSerial, RfidNotify> rfid(Serial2);
 
-  // Create the template instance bound to this UART
-  static Rfid134<HardwareSerial, Notify> reader(*uart_);
-  reader_ = &reader;
-  reader_->begin();
+// Setup function for RFID
+void initRFID()
+{
+    Serial2.begin(9600, SERIAL_8N2, HardwareSerial_Rx, HardwareSerial_Tx);
+    rfid.begin();
 }
 
-void poll() {
-  if (reader_) reader_->loop();
+// Loop update function
+void updateRFID()
+{
+    rfid.loop();
 }
-
-void setOnTagCallback(OnTagCb cb) {
-  userCb_ = cb;
-}
-
-} // namespace RFID134Mod
