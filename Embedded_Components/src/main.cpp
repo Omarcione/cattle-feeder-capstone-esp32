@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include "rfid.hpp"
+#include "load_cell.hpp"
 
 void setup()
 {
@@ -7,6 +8,7 @@ void setup()
     Serial.println("initializing...");
 
     initRFID();
+    initLoadCell();
 
     Serial.println("starting...");
 }
@@ -14,4 +16,5 @@ void setup()
 void loop()
 {
     updateRFID();
+    loadCellRead();
 }
