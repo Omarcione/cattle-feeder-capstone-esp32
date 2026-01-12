@@ -15,6 +15,6 @@ void setup()
 
 void loop()
 {
-    updateRFID();
-    loadCellRead();
+    // updateRFID();
+    // loadCellRead();
 }
