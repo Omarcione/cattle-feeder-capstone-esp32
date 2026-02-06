@@ -34,14 +34,7 @@
 
 #include <Wire.h>
 #include <7Semi_SCD4x.h>
-
-// I2C speed for bring-up (100 kHz recommended; raise later if stable)
-#define I2C_ADDR 0x62
-#define I2C_FREQ_HZ 100000UL
-
-// Set to -1 to use board defaults
-#define I2C_SDA_PIN -1
-#define I2C_SCL_PIN -1
+#include "carbonDioxideSensor.hpp"
 
 SCD4x_7Semi scd;
 
@@ -49,7 +42,7 @@ const uint32_t PERIOD_BETWEEN_SHOTS = 5000UL;  // how often to trigger single-sh
 const uint32_t SS_DELAY_CO2_MS = 5000UL;       // wait after measureSingleShot()
 const uint32_t SS_DELAY_RHT_MS = 1000UL;       // wait after measureSingleShotRhtOnly()
 
-void setup() {
+void co2SensorSetup() {
   Serial.begin(115200);
   while (!Serial) {}
 
@@ -99,7 +92,7 @@ void setup() {
   }
 }
 
-void loop() {
+void co2SensorRead() {
   static uint32_t last = 0;
   if (millis() - last < PERIOD_BETWEEN_SHOTS) return;
   last = millis();
@@ -128,22 +121,4 @@ void loop() {
   } else {
     Serial.println(F("readMeasurement() failed after single-shot (CO2+RHT)"));
   }
-
-  // ---- (Optional) Single-shot RHT-only example ----
-  // Uncomment to try RHT-only measurement between CO2 shots.
-  /*
-  if (!scd.measureSingleShotRhtOnly()) {
-    Serial.println(F("measureSingleShotRhtOnly() failed"));
-    return;
-  }
-  delay(SS_DELAY_RHT_MS);
-
-  uint16_t dummy; float t2, rh2;
-  if (scd.readMeasurement(dummy, t2, rh2)) {
-    Serial.print(F("[RHT-only] T "));  Serial.print(t2, 2); Serial.print(F(" C  "));
-    Serial.print(F("RH "));            Serial.print(rh2, 1); Serial.println(F(" %"));
-  } else {
-    Serial.println(F("readMeasurement() failed after RHT-only single-shot"));
-  }
-  */
 }
