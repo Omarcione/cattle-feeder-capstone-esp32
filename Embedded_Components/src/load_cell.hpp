@@ -1,14 +1,6 @@
-#include "HX711.h"
+#pragma once
 #include <Arduino.h>
 
-// HX711 circuit wiring
-const int LOADCELL_DOUT_PIN = 4;
-const int LOADCELL_SCK_PIN = 5;
-
-extern HX711 scale;
-
-#pragma once
-void initLoadCell();
-
-long loadCellRead();
-
+bool loadcell_init();
+bool loadcell_calibrate(Stream &io);                 // blocking, interactive
+bool loadcell_read(float &out_value, uint32_t now_ms); // non-blocking; true when new value ready
