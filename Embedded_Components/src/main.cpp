@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include "rfid.hpp"
 #include "load_cell.hpp"
+#include "wifi.hpp"
 
 String cmd;
 
