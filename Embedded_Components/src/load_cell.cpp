@@ -66,6 +66,8 @@ bool loadcell_read(float &out_value, uint32_t now_ms) {
     out_value = load_cell.getData();
     s_new_data_ready = false;
     s_last_ms = now_ms;
+    Serial.print("Load cell: ");
+    Serial.println(out_value, 3);
     return true;
   }
   return false;

@@ -16,3 +16,5 @@ extern Rfid134<HardwareSerial, RfidNotify> rfid;
 // Function prototypes
 void initRFID();
 void updateRFID();
+bool rfidHasNewReading();
+int rfidGetReading();

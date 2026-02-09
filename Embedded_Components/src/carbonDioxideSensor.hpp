@@ -9,5 +9,5 @@
 #define I2C_SDA_PIN -1
 #define I2C_SCL_PIN -1
 
-void co2SensorSetup();
-void co2SensorRead();
+bool co2SensorSetup();
+int co2SensorRead();

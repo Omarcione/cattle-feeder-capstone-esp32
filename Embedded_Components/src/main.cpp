@@ -2,8 +2,13 @@
 #include "rfid.hpp"
 #include "load_cell.hpp"
 #include "wifi.hpp"
+#include "carbonDioxideSensor.hpp"
+#include "protocol.hpp"
 
 String cmd;
+
+bool new_data_ready = false;
+TelemetryData_t latest_data;
 
 void setup()
 {
@@ -14,7 +19,12 @@ void setup()
 
     if (!loadcell_init()) {
         Serial.println("Load cell init failed.");
-        while (true) delay(100);
+        exit(1);
+    }
+
+    if (!co2SensorSetup()) {
+        Serial.println("CO2 init failed.");
+        exit(1);
     }
     
     Serial.println("starting...");
@@ -24,15 +34,23 @@ void setup()
 void loop()
 {
     float weight;
+    int id, co2;
     
     updateRFID();
+    
+    if (rfidHasNewReading()) 
+        id = rfidGetReading();
+    else id = -1;
 
-    if (loadcell_read(weight, millis())) {
-        Serial.print("Load cell: ");
-        Serial.println(weight, 3);
-    }
+    loadcell_read(weight, millis());
 
-    // ---- command parser ----
+    co2 = co2SensorRead();
+    // ---- command parser ---- 
+    //only calibrate implemented rn
+    parse_commands();
+}
+
+void parse_commands(void) {
     while (Serial.available()) {
         char c = Serial.read();
 

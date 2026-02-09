@@ -42,7 +42,7 @@ const uint32_t PERIOD_BETWEEN_SHOTS = 5000UL;  // how often to trigger single-sh
 const uint32_t SS_DELAY_CO2_MS = 5000UL;       // wait after measureSingleShot()
 const uint32_t SS_DELAY_RHT_MS = 1000UL;       // wait after measureSingleShotRhtOnly()
 
-void co2SensorSetup() {
+bool co2SensorSetup() {
   Serial.begin(115200);
   while (!Serial) {}
 
@@ -50,7 +50,7 @@ void co2SensorSetup() {
   while (!scd.begin()) {
     // while (!scd.begin(I2C_ADDR,I2C_SDA_PIN, I2C_SCL_PIN, I2C_FREQ_HZ)) {
     Serial.println(F("ERROR: not detected"));
-    while (1) delay(1000);
+    return false;
   }
 
   // Ensure we’re not in periodic mode
@@ -92,7 +92,7 @@ void co2SensorSetup() {
   }
 }
 
-void co2SensorRead() {
+int co2SensorRead() {
   static uint32_t last = 0;
   if (millis() - last < PERIOD_BETWEEN_SHOTS) return;
   last = millis();
@@ -109,16 +109,18 @@ void co2SensorRead() {
   uint16_t co2;
   float tc, rh;
   if (scd.readMeasurement(co2, tc, rh)) {
-    Serial.print(F("[CO2+RHT] CO2 "));
-    Serial.print(co2);
-    Serial.print(F(" ppm  "));
-    Serial.print(F("T "));
-    Serial.print(tc, 2);
-    Serial.print(F(" C  "));
-    Serial.print(F("RH "));
-    Serial.print(rh, 1);
-    Serial.println(F(" %"));
+    // Serial.print(F("[CO2+RHT] CO2 "));
+    // Serial.print(co2);
+    // Serial.print(F(" ppm  "));
+    // Serial.print(F("T "));
+    // Serial.print(tc, 2);
+    // Serial.print(F(" C  "));
+    // Serial.print(F("RH "));
+    // Serial.print(rh, 1);
+    // Serial.println(F(" %"));
+    return (int)co2;
   } else {
-    Serial.println(F("readMeasurement() failed after single-shot (CO2+RHT)"));
+    // Serial.println(F("readMeasurement() failed after single-shot (CO2+RHT)"));
+    return -1;
   }
 }
