@@ -26,6 +26,25 @@ void initWiFi() {
     return;
 }
 
+// Initialize NTP time synchronization after connecting to WiFi
+void initTime() {
+    configTime(-8 * 3600, 0, "pool.ntp.org", "time.nist.gov"); // PST timezone, no daylight saving time
+    
+    Serial.print("Waiting for NTP time sync: ");
+    time_t now = time(nullptr);
+    while (now < 8 * 3600 * 2) {  // Wait until time is synced
+        delay(500);
+        Serial.print(".");
+        now = time(nullptr);
+    }
+    Serial.println("\nTime synchronized");
+    
+    struct tm timeinfo;
+    gmtime_r(&now, &timeinfo);
+    Serial.print("Current time: ");
+    Serial.println(asctime(&timeinfo));
+}
+
 void connectAWS() {
     net.setCACert(AWS_CERT_CA);
     net.setCertificate(AWS_CERT_CRT);
@@ -51,12 +70,21 @@ void connectAWS() {
     Serial.print("\nSuccessfully Connected!");
 }
 
-void publishMessage(char *string) {
-    JsonDocument doc;
-    doc["time"] = millis();
-    doc["message"] = string;
+void publishMessage(uint64_t cowID, float loadCellReading, float co2Reading, float ch4Reading) {
+    StaticJsonDocument<256> doc;
+
+    time_t now = time(nullptr);
+    char timestamp[30];
+    strftime(timestamp, sizeof(timestamp), "%Y-%m-%d %H:%M:%S", gmtime(&now));
+
+    doc["cowID"] = cowID;
+    doc["time"] = timestamp;
+    doc["weight"] = loadCellReading;
+    doc["co2"] = co2Reading;
+    doc["ch4"] = ch4Reading;
+
     char jsonBuffer[512];
-    serializeJson(doc, jsonBuffer); // print to client
+    serializeJson(doc, jsonBuffer, sizeof(jsonBuffer));
 
     MQTTclient.publish(AWS_IOT_PUBLISH_TOPIC, jsonBuffer);
 }
