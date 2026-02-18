@@ -26,6 +26,11 @@ void initWiFi() {
     return;
 }
 
+void disconnectWiFi() { // to save power when not needed
+    WiFi.disconnect(true, false);
+    Serial.println("Disconnected from WiFi");
+}
+
 // Initialize NTP time synchronization after connecting to WiFi
 void initTime() {
     configTime(-8 * 3600, 0, "pool.ntp.org", "time.nist.gov"); // PST timezone, no daylight saving time
@@ -70,18 +75,21 @@ void connectAWS() {
     Serial.print("\nSuccessfully Connected!");
 }
 
-void publishMessage(uint64_t cowID, float loadCellReading, float co2Reading, float ch4Reading) {
+void publishMessage(TelemetryData_t data) {
+    static uint16_t seq = 0;
     StaticJsonDocument<256> doc;
 
     time_t now = time(nullptr);
     char timestamp[30];
     strftime(timestamp, sizeof(timestamp), "%Y-%m-%d %H:%M:%S", gmtime(&now));
 
-    doc["cowID"] = cowID;
+    doc["deviceID"] = data.device_id;
+    doc["seq"] = seq++;
+    doc["cowID"] = data.rfid_id;
     doc["time"] = timestamp;
-    doc["weight"] = loadCellReading;
-    doc["co2"] = co2Reading;
-    doc["ch4"] = ch4Reading;
+    doc["weight"] = data.weight_g;
+    doc["co2"] = data.co2_ppm;
+    doc["ch4"] = data.ch4_ppm;
 
     char jsonBuffer[512];
     serializeJson(doc, jsonBuffer, sizeof(jsonBuffer));

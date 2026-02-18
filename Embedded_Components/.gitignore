@@ -7,8 +7,4 @@
 .vscode
 .vscode/extensions.json
 .vscode/c_cpp_properties
-<<<<<<< HEAD
-/src/secrets.h
-=======
 src/secrets.h
->>>>>>> wifi
