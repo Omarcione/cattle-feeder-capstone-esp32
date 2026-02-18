@@ -1,5 +1,5 @@
 #include <Arduino.h>
-#include <vector>
+#include <deque>
 #include "protocol.hpp"
 #include "rfid.hpp"
 #include "load_cell.hpp"
@@ -12,7 +12,7 @@ const uint8_t DEV_ID = 1;
 const uint32_t PUBLISH_INTERVAL_MS = 120000; // publish every 2 minutes
 const uint32_t HEARTBEAT_INTERVAL_MS = 1800000; // publish heartbeat every 30 minutes
 
-std::vector<TelemetryData_t> data_buffer; // buffer to store unsent data when WiFi is unavailable
+std::deque<TelemetryData_t> data_buffer; // buffer to store unsent data when WiFi is unavailable
 
 unsigned long lastPublishTime = 0;
 
@@ -69,7 +69,7 @@ void loop()
         while (data_buffer.size() > 0) {
             TelemetryData_t data_to_send = data_buffer.front();
             publishMessage(data_to_send);
-            data_buffer.erase(data_buffer.begin()); // remove sent data from buffer
+            data_buffer.pop_front(); // remove sent data from buffer
         }
         disconnectWiFi(); // disconnect WiFi to save power after publishing
 
