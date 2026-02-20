@@ -11,10 +11,13 @@ const uint8_t DEV_ID = 1;
 
 const uint32_t PUBLISH_INTERVAL_MS = 120000; // publish every 2 minutes
 const uint32_t HEARTBEAT_INTERVAL_MS = 1800000; // publish heartbeat every 30 minutes
+const uint32_t RECORD_INTERVAL_MS = 15000; // read data every 15 seconds
 
 std::deque<TelemetryData_t> data_buffer; // buffer to store unsent data when WiFi is unavailable
 
 unsigned long lastPublishTime = 0;
+
+unsigned long lastRecordTime = 0;
 
 void setup()
 {
@@ -45,21 +48,29 @@ void loop()
     float weight;
     int id, co2;
     
+    unsigned long now = millis();
+
     updateRFID();
     
     if (rfidHasNewReading()) 
         latest_data.rfid_id = rfidGetReading();
     else latest_data.rfid_id = -1;
 
-    loadcell_read(latest_data.weight_g, millis());
+    if ((latest_data.rfid_id > 0) || (lastRecordTime - now >= RECORD_INTERVAL_MS)) { // record data when there is a new RFID reading or every 15 sec
 
-    latest_data.co2_ppm = co2SensorRead();
-    latest_data.ch4_ppm = 0; // CH4 not implemented yet
-    latest_data.device_id = DEV_ID; // TODO: set unique device ID for each feeder
-    
-    data_buffer.push_back(latest_data); // buffer data for later sending
+        loadcell_read(latest_data.weight_g, millis());
 
-    unsigned long now = millis();
+        latest_data.co2_ppm = co2SensorRead();
+        latest_data.ch4_ppm = 0; // CH4 not implemented yet
+        latest_data.device_id = DEV_ID; // TODO: set unique device ID for each feeder
+
+        latest_data.time_ms = time(nullptr);
+
+        data_buffer.push_back(latest_data); // buffer data for later sending
+
+        lastRecordTime = now;
+    }
+
 
     if (!data_buffer.empty() && now - lastPublishTime >= PUBLISH_INTERVAL_MS) { // publish at most once per 2 minutes if there is data
 

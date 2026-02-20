@@ -6,4 +6,5 @@ typedef struct {
   float co2_ppm;         // CO2 ppm
   float ch4_ppm;         // CH4 ppm
   float weight_g;        // weight in grams (or your chosen unit)
+  time_t time_ms;
 } TelemetryData_t;

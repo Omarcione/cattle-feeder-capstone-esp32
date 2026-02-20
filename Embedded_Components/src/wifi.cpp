@@ -79,9 +79,8 @@ void publishMessage(TelemetryData_t data) {
     static uint16_t seq = 0;
     StaticJsonDocument<256> doc;
 
-    time_t now = time(nullptr);
     char timestamp[30];
-    strftime(timestamp, sizeof(timestamp), "%Y-%m-%d %H:%M:%S", gmtime(&now));
+    strftime(timestamp, sizeof(timestamp), "%Y-%m-%d %H:%M:%S", gmtime(&data.time_ms));
 
     doc["deviceID"] = data.device_id;
     doc["seq"] = seq++;
