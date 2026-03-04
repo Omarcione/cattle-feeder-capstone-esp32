@@ -1,10 +1,8 @@
 #include "rfid.hpp"
 
 // Global variable
-uint64_t ID_Number = 0;
-
+volatile uint64_t ID_Number = 0;
 static volatile bool rfidNewReading = false;
-static uint64_t last_id;
 
 // Notification handler class
 class RfidNotify
@@ -21,6 +19,8 @@ public:
     {
         ID_Number = reading.id;
         rfidNewReading = true;
+        Serial.print("RFID read: ");
+        Serial.println(ID_Number);
     }
 };
 
@@ -46,9 +46,9 @@ bool rfidHasNewReading()
 }
 
 
-int rfidGetReading()
+uint64_t rfidGetReading()
 {
     rfidNewReading = false;   // consume the reading
-    return last_id;
+    return ID_Number;
 }
 

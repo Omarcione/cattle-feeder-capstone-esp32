@@ -51,6 +51,16 @@ bool loadcell_init() {
 
   load_cell.setCalFactor(cal);
 
+  // Reduce smoothing to improve responsiveness on weight changes.
+  // Default library SAMPLES is 16 which smooths values but increases settling
+  // time. Use a lower number (valid: 1,2,4,8,16,32,64,128) to make the
+  // output update faster. Pick 4 as a reasonable compromise.
+  load_cell.setSamplesInUse(4);
+
+  // Fill the dataset immediately so getData() returns responsive values
+  // right after init instead of slowly converging over many conversions.
+  load_cell.refreshDataSet();
+
   // ensure dataset is ready
   while (!load_cell.update()) delay(1);
 
@@ -66,8 +76,8 @@ bool loadcell_read(float &out_value, uint32_t now_ms) {
     out_value = load_cell.getData();
     s_new_data_ready = false;
     s_last_ms = now_ms;
-    Serial.print("Load cell: ");
-    Serial.println(out_value, 3);
+    // Serial.print("Load cell: ");
+    // Serial.println(out_value, 3);
     return true;
   }
   return false;

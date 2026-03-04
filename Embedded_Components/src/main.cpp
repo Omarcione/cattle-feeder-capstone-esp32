@@ -72,20 +72,19 @@ void loop()
     float weight;
     int id, co2;
     
-    static uint64_t last_rfid_id = -1;  // remember the last RFID reading
+    static uint64_t last_rfid_id = 0;  // remember the last RFID reading
     
     unsigned long now = millis();
 
     updateRFID();
-    
+    loadcell_read(latest_data.weight_g, millis());
     if (rfidHasNewReading()) {
         last_rfid_id = rfidGetReading();  // update with new reading
     }
-    latest_data.rfid_id = last_rfid_id;  // use the last valid reading (old or new)
 
-    if ((latest_data.rfid_id > 0) || (lastRecordTime - now >= RECORD_INTERVAL_MS)) { // record data when there is a new RFID reading or every 15 sec
+    if (last_rfid_id != 0 && (rfidHasNewReading() || now - lastRecordTime >= RECORD_INTERVAL_MS)) { // record data when there is a new RFID reading or every 15 sec
 
-        loadcell_read(latest_data.weight_g, millis());
+        latest_data.rfid_id = last_rfid_id;  // use the last valid reading (old or new)
 
         latest_data.co2_ppm = co2SensorRead();
         latest_data.ch4_ppm = 0; // CH4 not implemented yet
@@ -94,6 +93,15 @@ void loop()
         latest_data.time_ms = time(nullptr);
 
         data_buffer.push_back(latest_data); // buffer data for later sending
+
+        // Print a single, labeled line for easier parsing/readability
+        Serial.print("Buffered data: ");
+        Serial.print("weight_g="); Serial.print(latest_data.weight_g, 3);
+        Serial.print(", rfid_id="); Serial.print(latest_data.rfid_id);
+        Serial.print(", co2_ppm="); Serial.print(latest_data.co2_ppm);
+        Serial.print(", ch4_ppm="); Serial.print(latest_data.ch4_ppm);
+        Serial.print(", device_id="); Serial.print(latest_data.device_id);
+        Serial.print(", time="); Serial.println(latest_data.time_ms);
 
         lastRecordTime = now;
     }
