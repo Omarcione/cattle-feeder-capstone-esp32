@@ -17,8 +17,9 @@ std::deque<TelemetryData_t> data_buffer; // buffer to store unsent data when WiF
 
 unsigned long lastPublishTime = 0;
 
-unsigned long lastRecordTime = 0;
 
+unsigned long lastRecordTime = 0;
+extern MQTTClient MQTTclient;
 void setup()
 {
     Serial.begin(115200);
@@ -35,11 +36,33 @@ void setup()
         Serial.println("CO2 init failed.");
         exit(1);
     }
+    initWiFi();
+    initTime();
+    disconnectWiFi();
+    Serial.println("Time synchronized");
     
     Serial.println("starting...");
     Serial.println("Type 'cal' + enter to calibrate load cell.");
+}
 
-    initTime();
+void parse_commands(void) {
+    while (Serial.available()) {
+        char c = Serial.read();
+
+        // newline or carriage return ends command
+        if (c == '\n' || c == '\r') {
+        cmd.trim();
+
+        if (cmd == "cal") {
+            Serial.println("Entering calibration mode...");
+            loadcell_calibrate(Serial);
+        }
+
+        cmd = "";   // reset buffer
+        } else {
+        cmd += c;   // accumulate characters
+        }
+    }
 }
 
 void loop()
@@ -48,13 +71,16 @@ void loop()
     float weight;
     int id, co2;
     
+    static uint64_t last_rfid_id = -1;  // remember the last RFID reading
+    
     unsigned long now = millis();
 
     updateRFID();
     
-    if (rfidHasNewReading()) 
-        latest_data.rfid_id = rfidGetReading();
-    else latest_data.rfid_id = -1;
+    if (rfidHasNewReading()) {
+        last_rfid_id = rfidGetReading();  // update with new reading
+    }
+    latest_data.rfid_id = last_rfid_id;  // use the last valid reading (old or new)
 
     if ((latest_data.rfid_id > 0) || (lastRecordTime - now >= RECORD_INTERVAL_MS)) { // record data when there is a new RFID reading or every 15 sec
 
@@ -101,24 +127,4 @@ void loop()
     // ---- command parser ---- 
     //only calibrate implemented rn
     parse_commands();
-}
-
-void parse_commands(void) {
-    while (Serial.available()) {
-        char c = Serial.read();
-
-        // newline or carriage return ends command
-        if (c == '\n' || c == '\r') {
-        cmd.trim();
-
-        if (cmd == "cal") {
-            Serial.println("Entering calibration mode...");
-            loadcell_calibrate(Serial);
-        }
-
-        cmd = "";   // reset buffer
-        } else {
-        cmd += c;   // accumulate characters
-        }
-    }
 }

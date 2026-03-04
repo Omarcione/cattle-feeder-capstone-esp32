@@ -8,7 +8,7 @@
 #include <MQTTClient.h>
 #include "protocol.hpp"
 
-#define THINGNAME "COW_FEEDER"
+#define THINGNAME "esp32-cow-feeder"
 #define AWS_IOT_PUBLISH_TOPIC "esp32/pub" // MQTT topic to publish to
 
 void initWiFi();

@@ -33,21 +33,28 @@ void disconnectWiFi() { // to save power when not needed
 
 // Initialize NTP time synchronization after connecting to WiFi
 void initTime() {
-    configTime(-8 * 3600, 0, "pool.ntp.org", "time.nist.gov"); // PST timezone, no daylight saving time
+    configTime(0, 0, "pool.ntp.org", "time.nist.gov");
     
-    Serial.print("Waiting for NTP time sync: ");
+    // Wait for time to be set (must call time() inside loop to get updated value)
     time_t now = time(nullptr);
-    while (now < 8 * 3600 * 2) {  // Wait until time is synced
+    while (now < 8 * 3600 * 2) {
         delay(500);
-        Serial.print(".");
-        now = time(nullptr);
+        now = time(nullptr);  // Update time inside loop
     }
     Serial.println("\nTime synchronized");
-    
+
+    // convert to local time zone (PST/PDT)
+    // set TZ environment variable; tzset() initializes libc timezone data
+    setenv("TZ", "PST8PDT", 1);
+    tzset();
+
     struct tm timeinfo;
-    gmtime_r(&now, &timeinfo);
-    Serial.print("Current time: ");
-    Serial.println(asctime(&timeinfo));
+    // use localtime_r instead of gmtime_r so the printed time is Pacific
+    localtime_r(&now, &timeinfo);
+    Serial.print("Current local time: ");
+    char buf[64];
+    strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S %Z", &timeinfo);
+    Serial.println(buf);
 }
 
 void connectAWS() {
@@ -58,29 +65,46 @@ void connectAWS() {
     // Connect to MQTT broker on AWS
     MQTTclient.begin(AWS_IOT_ENDPOINT, 8883, net);
 
-    Serial.print("\nAttempting to connect");
+    Serial.print("\nAttempting to connect to AWS IoT");
 
-    // Attempt to connect to AWS IoT
+    // Attempt to connect to AWS IoT with timeout
+    unsigned long connectionStartTime = millis();
+    const unsigned long CONNECTION_TIMEOUT_MS = 30000; // 30 second timeout
+    
     while (!MQTTclient.connect(THINGNAME)) {
         Serial.print(".");
         delay(100);
+        
+        // Check for timeout
+        if (millis() - connectionStartTime > CONNECTION_TIMEOUT_MS) {
+            Serial.println("\nAWS IoT Connection Timeout!");
+            return;
+        }
     }
 
-    // Check if connection was successful
-    if (!MQTTclient.connected()) {
-        Serial.println("\nAWS IoT Timeout!");
-        return;
-    }
-
-    Serial.print("\nSuccessfully Connected!");
+    // Connection successful
+    Serial.println("\nSuccessfully Connected to AWS IoT!");
 }
 
 void publishMessage(TelemetryData_t data) {
     static uint16_t seq = 0;
-    StaticJsonDocument<256> doc;
+    
+    // Ensure MQTT connection is active
+    if (!MQTTclient.connected()) {
+        Serial.println("ERROR: MQTT not connected, cannot publish");
+        return;
+    }
+    
+    // Process MQTT operations
+    MQTTclient.loop();
+    
+    JsonDocument doc;
 
     char timestamp[30];
-    strftime(timestamp, sizeof(timestamp), "%Y-%m-%d %H:%M:%S", gmtime(&data.time_ms));
+    // convert packet time to local timezone (PST/PDT) before formatting
+    struct tm tm_info;
+    localtime_r(&data.time_ms, &tm_info);
+    strftime(timestamp, sizeof(timestamp), "%Y-%m-%d %H:%M:%S", &tm_info);
 
     doc["deviceID"] = data.device_id;
     doc["seq"] = seq++;
@@ -93,5 +117,14 @@ void publishMessage(TelemetryData_t data) {
     char jsonBuffer[512];
     serializeJson(doc, jsonBuffer, sizeof(jsonBuffer));
 
-    MQTTclient.publish(AWS_IOT_PUBLISH_TOPIC, jsonBuffer);
+    bool success = MQTTclient.publish(AWS_IOT_PUBLISH_TOPIC, jsonBuffer);
+    
+    if (success) {
+        Serial.print("Published to ");
+        Serial.print(AWS_IOT_PUBLISH_TOPIC);
+        Serial.print(": ");
+        Serial.println(jsonBuffer);
+    } else {
+        Serial.println("ERROR: Failed to publish message");
+    }
 }

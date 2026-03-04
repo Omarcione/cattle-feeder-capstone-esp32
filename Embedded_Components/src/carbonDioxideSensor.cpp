@@ -90,17 +90,18 @@ bool co2SensorSetup() {
     Serial.print(F("Variant raw: 0x"));
     Serial.println(var, HEX);
   }
+  return true;
 }
 
 int co2SensorRead() {
   static uint32_t last = 0;
-  if (millis() - last < PERIOD_BETWEEN_SHOTS) return;
+  if (millis() - last < PERIOD_BETWEEN_SHOTS) return 0;
   last = millis();
 
   // ---- Single-shot CO2 + RHT ----
   if (!scd.measureSingleShot()) {
     Serial.println(F("measureSingleShot() failed (CO2+RHT)"));
-    return;
+    return -1;
   }
 
   delay(SS_DELAY_CO2_MS);  // DO NOT poll data-ready in single-shot mode
