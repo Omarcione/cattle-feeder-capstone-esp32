@@ -5,6 +5,7 @@
 #include "load_cell.hpp"
 #include "wifi.hpp"
 #include "carbonDioxideSensor.hpp"
+#include "methaneSensor.hpp"
 
 String cmd;
 const uint8_t DEV_ID = 1;
